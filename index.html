@@ -729,9 +729,6 @@ let isAnimating = false;
     const card = cards[rand(cards.length)];
     const isReversed = Math.random() < 0.5;
 
-    // ヒント非表示
-    document.getElementById('initialHint').style.display = 'none';
-
     // グロー
     const wrapper = document.getElementById('cardWrapper');
     wrapper.classList.add('drawing');
@@ -804,8 +801,6 @@ let isAnimating = false;
 
     setTimeout(() => {
       document.getElementById('backImg').src = imgSrc(showAdvice ? 'cards/back1.png' : 'cards/back5.png');
-      document.getElementById('initialHint').style.display = 'none';
-
       document.getElementById('subtitle').textContent = '質問を思い浮かべながらボタンを押してください';
       hasDrawn = false;
       isAnimating = false;
