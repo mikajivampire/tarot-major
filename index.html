@@ -1,0 +1,831 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>タロット占い</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1a0a2e 0%, #0d0018 60%, #000008 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      font-family: 'Georgia', '游明朝', 'Yu Mincho', serif;
+      color: #e8d5b7;
+      overflow-x: hidden;
+      padding-bottom: 40px;
+    }
+
+    /* 星のきらめき背景 */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 15%, rgba(255,255,220,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 8%, rgba(255,255,220,0.6) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 45% 25%, rgba(255,255,220,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 40%, rgba(255,255,220,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 55%, rgba(255,255,220,0.7) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 60% 70%, rgba(255,255,220,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,220,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 90%, rgba(255,255,220,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5% 35%, rgba(255,255,220,0.7) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 55% 50%, rgba(255,255,220,0.4) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-top: 36px;
+      margin-bottom: 32px;
+    }
+
+    .title-deco {
+      font-size: 11px;
+      letter-spacing: 6px;
+      color: #9b7fd4;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: normal;
+      letter-spacing: 8px;
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b86d 40%, #fceabb 70%, #e8b86d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 12px rgba(232,184,109,0.5));
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: #9b7fd4;
+      opacity: 0.8;
+    }
+
+    /* カードエリア */
+    .card-area {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    /* 3Dフリップ用ラッパー */
+    .card-wrapper {
+      perspective: 1000px;
+      width: 220px;
+      height: 380px;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+.card-face, .card-back {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 2px rgba(155,127,212,0.4),
+        0 0 30px rgba(155,127,212,0.3),
+        0 20px 60px rgba(0,0,0,0.7);
+    }
+
+    .card-back {
+      background: #1a0a2e;
+    }
+
+    .card-face {
+      transform: rotateY(180deg);
+      background: #0d0018;
+    }
+
+    /* 逆位置のとき card-face を上下逆に */
+    .card-face.reversed-img {
+      transform: rotateY(180deg) rotate(180deg);
+    }
+
+    .card-face img, .card-back img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* カード名・位置表示 */
+    .card-info {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      margin-top: 0;
+      transition: opacity 0.6s ease 0.4s, max-height 0.6s ease 0.4s, margin-top 0.6s ease 0.4s;
+    }
+
+    .card-info.visible {
+      opacity: 1;
+      max-height: 400px;
+      margin-top: 24px;
+    }
+
+    .card-number {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: #9b7fd4;
+    }
+
+    .card-name {
+      font-size: 26px;
+      letter-spacing: 4px;
+      background: linear-gradient(135deg, #f5d78e, #e8b86d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 8px rgba(232,184,109,0.4));
+    }
+
+    .card-position {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      letter-spacing: 3px;
+    }
+
+    .card-position.upright {
+      background: rgba(155,127,212,0.15);
+      border: 1px solid rgba(155,127,212,0.5);
+      color: #c4a8ff;
+    }
+
+    .card-position.reversed {
+      background: rgba(212,127,127,0.15);
+      border: 1px solid rgba(212,127,127,0.5);
+      color: #ffb8b8;
+    }
+
+    .position-icon {
+      font-size: 14px;
+    }
+
+    /* ボタン */
+    .btn-draw {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+      padding: 18px 0;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: 'Georgia', '游明朝', serif;
+      font-size: 16px;
+      letter-spacing: 6px;
+      color: #1a0a2e;
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b86d 40%, #fceabb 70%, #e8b86d 100%);
+      box-shadow:
+        0 0 20px rgba(232,184,109,0.4),
+        0 8px 24px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .btn-draw::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 50%);
+      border-radius: 50px;
+    }
+
+    .btn-draw:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow:
+        0 0 30px rgba(232,184,109,0.6),
+        0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .btn-draw:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow:
+        0 0 12px rgba(232,184,109,0.4),
+        0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .btn-draw.silver {
+      background: linear-gradient(135deg, #d0d0d8 0%, #a8a8b8 40%, #e8e8f0 70%, #a8a8b8 100%);
+      box-shadow: 0 0 16px rgba(200,200,220,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn-draw.silver:hover:not(:disabled) {
+      box-shadow: 0 0 24px rgba(200,200,220,0.5), 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .btn-draw:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-reset {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+      padding: 18px 0;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: 'Georgia', '游明朝', serif;
+      font-size: 16px;
+      letter-spacing: 6px;
+      color: #1a0a2e;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      display: none;
+      margin-bottom: 12px;
+    }
+
+    .btn-reset::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 50%);
+      border-radius: 50px;
+    }
+
+    .btn-reset.gold {
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b86d 40%, #fceabb 70%, #e8b86d 100%);
+      box-shadow: 0 0 20px rgba(232,184,109,0.4), 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn-reset.gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(232,184,109,0.6), 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .btn-reset.silver {
+      background: linear-gradient(135deg, #d0d0d8 0%, #a8a8b8 40%, #e8e8f0 70%, #a8a8b8 100%);
+      box-shadow: 0 0 16px rgba(200,200,220,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn-reset.silver:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(200,200,220,0.5), 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .btn-back {
+      background: transparent;
+      border: none;
+      color: rgba(155,127,212,0.6);
+      font-family: 'Georgia', '游明朝', serif;
+      font-size: 12px;
+      letter-spacing: 3px;
+      padding: 10px 0;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      display: none;
+    }
+
+    .btn-back:hover {
+      color: rgba(155,127,212,1);
+    }
+
+    /* パーティクル */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      opacity: 0;
+      animation: floatUp 2s ease-out forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0) scale(0); }
+      20% { opacity: 1; transform: translateY(-30px) scale(1); }
+      100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+    }
+
+    /* 初期状態のカード裏メッセージ */
+    .initial-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: rgba(155,127,212,0.6);
+      font-size: 12px;
+      letter-spacing: 2px;
+      gap: 12px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .hint-icon { font-size: 28px; opacity: 0.5; }
+
+    /* グロー効果 */
+    .glow-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 24px;
+      background: transparent;
+      border: 1px solid rgba(155,127,212,0);
+      transition: border-color 0.5s, box-shadow 0.5s;
+      pointer-events: none;
+    }
+
+    .card-wrapper.drawing .glow-ring {
+      border-color: rgba(155,127,212,0.6);
+      box-shadow: 0 0 30px rgba(155,127,212,0.4), inset 0 0 20px rgba(155,127,212,0.1);
+    }
+
+    .card-meaning:empty { display: none; }
+
+    .card-meaning {
+      font-size: 13px;
+      line-height: 1.8;
+      letter-spacing: 1px;
+      color: #c8b89a;
+      text-align: center;
+      max-width: 300px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(155,127,212,0.2);
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    .divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(155,127,212,0.5), transparent);
+      margin: 4px 0 20px;
+    }
+
+    /* モード選択画面 */
+    #modeScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at top, #1a0a2e 0%, #0d0018 60%, #000008 100%);
+      padding: 40px 24px;
+    }
+
+    #modeScreen .title-deco {
+      font-size: 11px;
+      letter-spacing: 6px;
+      color: #9b7fd4;
+      margin-bottom: 10px;
+    }
+
+    #modeScreen h1 {
+      font-size: 32px;
+      font-weight: normal;
+      letter-spacing: 8px;
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b86d 40%, #fceabb 70%, #e8b86d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 12px rgba(232,184,109,0.5));
+      margin-bottom: 12px;
+    }
+
+    #modeScreen .divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(155,127,212,0.5), transparent);
+      margin: 4px 0 40px;
+    }
+
+    .mode-label {
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: #9b7fd4;
+      margin-bottom: 20px;
+    }
+
+    .mode-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .btn-mode {
+      position: relative;
+      width: 100%;
+      padding: 18px 0;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: 'Georgia', '游明朝', serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .btn-mode-advice {
+      color: #1a0a2e;
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b86d 40%, #fceabb 70%, #e8b86d 100%);
+      box-shadow: 0 0 20px rgba(232,184,109,0.4), 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn-mode-advice::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 50%);
+      border-radius: 50px;
+    }
+
+    .btn-mode-advice:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(232,184,109,0.6), 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .btn-mode-none {
+      color: #2a2a3a;
+      background: linear-gradient(135deg, #d0d0d8 0%, #a8a8b8 40%, #e8e8f0 70%, #a8a8b8 100%);
+      border: none;
+      box-shadow: 0 0 16px rgba(200,200,220,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn-mode-none::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.4), transparent 50%);
+      border-radius: 50px;
+    }
+
+    .btn-mode-none:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(200,200,220,0.5), 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .mode-disclaimer {
+      margin-top: 32px;
+      font-size: 10px;
+      line-height: 1.8;
+      letter-spacing: 1px;
+      color: rgba(155,127,212,0.5);
+      text-align: center;
+      max-width: 280px;
+    }
+
+    .mode-credit {
+      position: absolute;
+      bottom: 16px;
+      right: 20px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #9b7fd4;
+    }
+
+    #modeScreen.fade-out {
+      animation: fadeOut 0.5s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; pointer-events: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- モード選択画面 -->
+<div id="modeScreen">
+  <div class="title-deco">Major Arcana</div>
+  <h1>タロット</h1>
+  <div class="title-deco" style="margin-bottom: 16px;">大アルカナ22枚</div>
+  <div class="divider"></div>
+  <div class="mode-label">モードを選んでください</div>
+  <div class="mode-buttons">
+    <button class="btn-mode btn-mode-advice" onclick="selectMode(true)">カードからのアドバイスあり</button>
+    <button class="btn-mode btn-mode-none"   onclick="selectMode(false)">なし（絵柄のみ）</button>
+  </div>
+  <p class="mode-disclaimer">※絵柄は生成AIで作成しているため、絵柄から意味を読み取りたい方には不向きかもしれません。エンタメとしてご利用ください。</p>
+  <div class="mode-credit">作成者：mika.ji_vampire</div>
+</div>
+
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <header>
+    <div class="title-deco">Major Arcana</div>
+    <h1>タロット</h1>
+    <div class="divider"></div>
+    <div class="subtitle" id="subtitle">質問を思い浮かべながらボタンを押してください</div>
+  </header>
+
+  <div class="card-area">
+    <div class="card-wrapper" id="cardWrapper">
+      <div class="glow-ring" id="glowRing"></div>
+      <div class="card-inner" id="cardInner">
+        <!-- 裏面 -->
+        <div class="card-back" id="cardBack">
+          <img src="" id="backImg" alt="カード裏">
+          <div class="initial-hint" id="initialHint">
+            <span class="hint-icon">🃏</span>
+            <span>カードを引く</span>
+          </div>
+        </div>
+        <!-- 表面 -->
+        <div class="card-face" id="cardFace">
+          <img src="" id="frontImg" alt="タロットカード">
+        </div>
+      </div>
+    </div>
+
+    <div class="card-info" id="cardInfo">
+      <div class="card-number" id="cardNumber"></div>
+      <div class="card-name" id="cardName"></div>
+      <div class="card-position" id="cardPosition">
+        <span class="position-icon" id="posIcon"></span>
+        <span id="posText"></span>
+      </div>
+      <div class="card-meaning" id="cardMeaning"></div>
+    </div>
+  </div>
+
+  <button class="btn-draw" id="btnDraw" onclick="drawCard()">カードを引く</button>
+  <button class="btn-reset" id="btnReset" onclick="resetCard()">もう一度引く</button>
+  <button class="btn-back" id="btnBack" onclick="goBack()">モード選択に戻る</button>
+</div>
+
+<script>
+  const cards = [
+    { num: '0',    name: '愚者',         file: 'cards/00_fool.png',
+      upright: '新しい出発と無限の可能性。恐れず一歩を踏み出す時。自由な心で未知の世界へ飛び込んで。',
+      reversed: '無謀な行動や準備不足に注意。衝動的な判断を避け、もう少し慎重に考えて。' },
+    { num: 'I',    name: '魔術師',       file: 'cards/01_magician.png',
+      upright: '持てる力とスキルを最大限に発揮できる時。強い意志で望む現実を創り出せる。',
+      reversed: '才能を活かしきれていない状態。自己不信や計画の不備が障害になっている。' },
+    { num: 'II',   name: '女教皇',       file: 'cards/02_high_priestess.png',
+      upright: '直感と内なる知恵を信頼して。答えはすでにあなたの中にある。静かに耳を傾けて。',
+      reversed: '直感を無視して表面だけで判断しがち。隠された真実や感情に目を向けて。' },
+    { num: 'III',  name: '女帝',         file: 'cards/03_empress.png',
+      upright: '豊かさと創造力が花開く時。愛情深く物事を育てることで大きな実りが得られる。',
+      reversed: '創造性が滞っているか、依存や過保護が問題に。自立と自己愛を取り戻して。' },
+    { num: 'IV',   name: '皇帝',         file: 'cards/04_emperor.png',
+      upright: '安定した基盤と強いリーダーシップ。計画を立て、秩序をもって物事を進める時。',
+      reversed: '権威への反発や支配欲が問題に。柔軟性を持ち、他者の意見にも耳を傾けて。' },
+    { num: 'V',    name: '教皇',         file: 'cards/05_hierophant.png',
+      upright: '伝統や精神的な教えの中に答えがある。信頼できる導き手の言葉を大切にして。',
+      reversed: '慣習にとらわれず、自分らしい生き方を模索する時。自由な発想で突き進んで。' },
+    { num: 'VI',   name: '恋人',         file: 'cards/06_lovers.png',
+      upright: '深い愛と心の調和。大切な選択を迫られているが、本当の価値観に従えばうまくいく。',
+      reversed: '価値観のすれ違いや優柔不断。自分が本当に望むものを見極めることが必要。' },
+    { num: 'VII',  name: '戦車',         file: 'cards/07_chariot.png',
+      upright: '強い意志と自制心で勝利をつかむ時。困難があっても前進し続ければ必ず道は開ける。',
+      reversed: '方向性を見失い、感情に流されがち。焦らず立ち止まって目標を再確認して。' },
+    { num: 'VIII', name: '力',           file: 'cards/08_strength.png',
+      upright: '内なる強さと穏やかな勇気が力になる。優しさと忍耐こそが本当の強さ。',
+      reversed: '自信を失い、感情に押し流されている。自分を信じ、焦らず自己を取り戻して。' },
+    { num: 'IX',   name: '隠者',         file: 'cards/09_hermit.png',
+      upright: '内省と孤独の時間が必要。一人で深く考えることで、大切な知恵と答えが見えてくる。',
+      reversed: '孤立しすぎて周囲から切り離されている。もう少し外の世界や人とつながって。' },
+    { num: 'X',    name: '運命の輪',     file: 'cards/10_wheel.png',
+      upright: '大きな転機が訪れる時。流れに乗れば幸運が巡ってくる。変化を恐れずに受け入れて。',
+      reversed: '流れに逆らって運を遠ざけている。変化への抵抗をやめ、流れに身を任せて。' },
+    { num: 'XI',   name: '正義',         file: 'cards/11_justice.png',
+      upright: '公正な判断と誠実さが報われる時。行動には責任が伴い、真実は必ず明らかになる。',
+      reversed: '不公平な状況や自己欺瞞に注意。責任から逃げずに正直に向き合う勇気を。' },
+    { num: 'XII',  name: '吊るされた男', file: 'cards/12_hanged_man.png',
+      upright: '一時の停止が新しい視点をもたらす。今は結果を急がず、待つことに意味がある。',
+      reversed: '無意味な我慢や停滞が続いている。そろそろ動き出す時。状況を変える勇気を持って。' },
+    { num: 'XIII', name: '死神',         file: 'cards/13_death.png',
+      upright: '終わりは新しい始まり。古いものを手放すことで、より良い未来への扉が開かれる。',
+      reversed: '変化を恐れて古いものにしがみついている。手放す勇気が新しい自分を連れてくる。' },
+    { num: 'XIV',  name: '節制',         file: 'cards/14_temperance.png',
+      upright: 'バランスと調和が鍵。焦らず少しずつ積み重ねることで、理想的な状態へ近づいていける。',
+      reversed: '極端な行動や感情の不均衡に注意。ペースを落とし、心と体のバランスを整えて。' },
+    { num: 'XV',   name: '悪魔',         file: 'cards/15_devil.png',
+      upright: '執着や依存が足かせになっている。物質的な誘惑や恐れが自由を奪っていないか見直して。',
+      reversed: '束縛からの解放が近い。自分を縛るものの正体に気づき、自由を取り戻せる時。' },
+    { num: 'XVI',  name: '塔',           file: 'cards/16_tower.png',
+      upright: '突然の変化や崩壊が訪れるが、それは古い構造を壊し真実を明らかにするため。',
+      reversed: '崩壊を避けようとしているが、内なる変革は必要。少しずつ変える準備を始めて。' },
+    { num: 'XVII', name: '星',           file: 'cards/17_star.png',
+      upright: '希望と癒しの時。試練を越えた後に輝く光がある。自分を信じて夢に向かって進んで。',
+      reversed: '希望を見失い、自己不信に陥っている。小さな光を見つけ、一歩ずつ前を向いて。' },
+    { num: 'XVIII',name: '月',           file: 'cards/18_moon.png',
+      upright: '不安や幻想が心を揺らしている。直感を頼りに、霧の中をゆっくりと進んで。',
+      reversed: '混乱が晴れ、隠れていた真実が見えてくる。恐れは薄れ、明晰さを取り戻せる。' },
+    { num: 'XIX',  name: '太陽',         file: 'cards/19_sun.png',
+      upright: '喜びと成功に満ちた輝かしい時。明るいエネルギーで物事が順調に進んでいく。',
+      reversed: '喜びが陰っているか、楽観的すぎる面も。自己中心にならず、周囲への配慮も忘れずに。' },
+    { num: 'XX',   name: '審判',         file: 'cards/20_judgement.png',
+      upright: '過去を手放し、新しい自分へと覚醒する時。赦しと再生が新たな出発をもたらす。',
+      reversed: '自己批判や後悔にとらわれている。過去の失敗を赦し、前に進む決断をして。' },
+    { num: 'XXI',  name: '世界',         file: 'cards/21_world.png',
+      upright: '完成と達成の時。一つのサイクルが美しく締めくくられ、充実感と喜びに満ちている。',
+      reversed: '完成まであと一歩。焦らず最後の仕上げに集中することで、ゴールに手が届く。' },
+  ];
+
+let isAnimating = false;
+  let hasDrawn = false;
+  let showAdvice = false;
+
+  function selectMode(advice) {
+    showAdvice = advice;
+    const screen = document.getElementById('modeScreen');
+    screen.classList.add('fade-out');
+    setTimeout(() => screen.remove(), 500);
+    document.getElementById('backImg').src = imgSrc(advice ? 'cards/back1.png' : 'cards/back5.png');
+    if (!advice) document.getElementById('btnDraw').classList.add('silver');
+  }
+
+  // ランダム整数
+  function rand(n) { return Math.floor(Math.random() * n); }
+
+  // 日本語パスをURLエンコードして返す
+  function imgSrc(path) {
+    return path.split('/').map(encodeURIComponent).join('/');
+  }
+
+  // パーティクル生成
+  function spawnParticles(x, y) {
+    const container = document.getElementById('particles');
+    const colors = ['#f5d78e','#c4a8ff','#ffb8b8','#a8d4ff','#ffffff'];
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = (Math.PI * 2 / 18) * i + Math.random() * 0.5;
+      const dist = 40 + Math.random() * 60;
+      p.style.left = (x + Math.cos(angle) * dist * 0.5) + 'px';
+      p.style.top  = (y + Math.sin(angle) * dist * 0.3) + 'px';
+      p.style.background = colors[rand(colors.length)];
+      p.style.width = (2 + Math.random() * 4) + 'px';
+      p.style.height = p.style.width;
+      p.style.animationDelay = (Math.random() * 0.3) + 's';
+      p.style.animationDuration = (1.2 + Math.random() * 0.8) + 's';
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 2500);
+    }
+  }
+
+  function drawCard() {
+    if (isAnimating || hasDrawn) return;
+    isAnimating = true;
+
+    const btnDraw = document.getElementById('btnDraw');
+    btnDraw.disabled = true;
+
+    // ランダム選択（裏面は変更しない）
+    const card = cards[rand(cards.length)];
+    const isReversed = Math.random() < 0.5;
+
+    // ヒント非表示
+    document.getElementById('initialHint').style.display = 'none';
+
+    // グロー
+    const wrapper = document.getElementById('cardWrapper');
+    wrapper.classList.add('drawing');
+
+    // 表面セット
+    const frontImg = document.getElementById('frontImg');
+    const cardFace = document.getElementById('cardFace');
+    frontImg.src = imgSrc(card.file);
+
+    if (isReversed) {
+      cardFace.classList.add('reversed-img');
+    } else {
+      cardFace.classList.remove('reversed-img');
+    }
+
+    // 少し待ってからフリップ
+    setTimeout(() => {
+      document.getElementById('cardInner').classList.add('flipped');
+
+      // パーティクル（カードの位置付近）
+      const rect = wrapper.getBoundingClientRect();
+      spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+      // カード情報表示
+      setTimeout(() => {
+        document.getElementById('cardNumber').textContent = card.num;
+        document.getElementById('cardName').textContent = card.name;
+
+        const pos = document.getElementById('cardPosition');
+        const posIcon = document.getElementById('posIcon');
+        const posText = document.getElementById('posText');
+
+        if (isReversed) {
+          pos.className = 'card-position reversed';
+          posIcon.textContent = '🔻';
+          posText.textContent = '逆位置';
+          document.getElementById('cardMeaning').textContent = showAdvice ? card.reversed : '';
+        } else {
+          pos.className = 'card-position upright';
+          posIcon.textContent = '🔺';
+          posText.textContent = '正位置';
+          document.getElementById('cardMeaning').textContent = showAdvice ? card.upright : '';
+        }
+
+        document.getElementById('subtitle').textContent = '';
+        document.getElementById('cardInfo').classList.add('visible');
+        wrapper.classList.remove('drawing');
+
+        isAnimating = false;
+        hasDrawn = true;
+        btnDraw.style.display = 'none';
+        const btnReset = document.getElementById('btnReset');
+        btnReset.className = showAdvice ? 'btn-reset gold' : 'btn-reset silver';
+        btnReset.style.display = 'block';
+        document.getElementById('btnBack').style.display = 'block';
+      }, 400);
+    }, 300);
+  }
+
+  function resetCard() {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    // フリップ戻し
+    const inner = document.getElementById('cardInner');
+    inner.classList.remove('flipped');
+
+    // 情報非表示
+    document.getElementById('cardInfo').classList.remove('visible');
+
+    setTimeout(() => {
+      document.getElementById('backImg').src = imgSrc(showAdvice ? 'cards/back1.png' : 'cards/back5.png');
+      document.getElementById('initialHint').style.display = 'none';
+
+      document.getElementById('subtitle').textContent = '質問を思い浮かべながらボタンを押してください';
+      hasDrawn = false;
+      isAnimating = false;
+
+      const btnDraw = document.getElementById('btnDraw');
+      btnDraw.disabled = false;
+      btnDraw.style.display = 'block';
+      document.getElementById('btnReset').style.display = 'none';
+      document.getElementById('btnBack').style.display = 'none';
+    }, 600);
+  }
+
+  function goBack() {
+    location.reload();
+  }
+
+</script>
+</body>
+</html>
